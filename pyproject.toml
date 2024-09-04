@@ -1,0 +1,91 @@
+[build-system]
+requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]
+build-backend = "poetry_dynamic_versioning.backend"
+
+[tool.poetry]
+name = "assists"
+version = "0.0.0"
+description = "A collection of DevOps and SRE related tools."
+homepage = "https://github.com/phillipsj/assists"
+repository = "https://github.com/phillipsj/assists"
+documentation = "https://github.com/phillipsj/assists/blob/main/DOCS.md"
+readme = "README.md"
+license = "Apache 2.0"
+keywords = ["DevOps", "SRE", "tools", "aws", "azure"]
+authors = ["Jamie Phillips <cphill11@gmail.com>"]
+maintainers = ["Jamie Phillips <cphill11@gmail.com>"]
+classifiers = [
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: System Administrators",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+]
+
+packages = [{include = "assists", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+typer = "^0.12.5"
+
+[tool.poetry.scripts]
+ast = "assists.main:app"
+
+[tool.poetry.group.lint.dependencies]
+ruff = "^0.6.3"
+
+[tool.poetry.group.test.dependencies]
+pytest = "^8.3.2"
+pytest-cov = "^5.0.0"
+
+[tool.poetry.group.docs.dependencies]
+mkdocs = "^1.6.0"
+
+[tool.poetry.group.dev.dependencies]
+taskipy = "^1.13.0"
+pre-commit = "^3.8.0"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = [
+    "tests"
+]
+
+[tool.ruff]
+extend-exclude = ["examples/"]
+src = ["src", "tests"]
+fix = true
+show-fixes = true
+output-format = "full"
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "B",  # flake8-bugbear
+    "E",  # pycodestyle error
+    "F",  # pyflakes
+    "I",  # isort
+    "UP",  # pyupgrade
+    "W",  # pycodestyle warning
+]
+
+[tool.ruff.lint.isort]
+force-single-line = true
+order-by-type = false
+
+[tool.taskipy.tasks]
+lint = "pre-commit run --all-files"
+test = "pytest -v --cov  --cov-report=html"
+docs = "typer assists.main utils docs --output DOCS.md --name ast"
+ci   = "task lint && task test"
+
+[tool.poetry-dynamic-versioning]
+enable = true
+vcs = "git"
