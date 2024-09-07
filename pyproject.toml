@@ -33,6 +33,7 @@ packages = [{include = "assists", from = "src"}]
 [tool.poetry.dependencies]
 python = "^3.10"
 typer = "^0.12.5"
+boto3 = "^1.35.14"
 
 [tool.poetry.scripts]
 ast = "assists.main:app"
@@ -50,6 +51,8 @@ mkdocs = "^1.6.0"
 [tool.poetry.group.dev.dependencies]
 taskipy = "^1.13.0"
 pre-commit = "^3.8.0"
+moto = "^5.0.13"
+boto3-stubs = "^1.35.14"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
