@@ -4,15 +4,9 @@ from pathlib import Path
 from urllib import request
 
 import hcl2
-import typer
 from semver import Version
 
 from assists.base.tool import Tool
-
-TERRAFORM_EXECUTABLE_NAME = (
-
-)
-TERRAFORM_EXECUTABLE = os.path.join(typer.get_app_dir(".assists"), f"lib/{TERRAFORM_EXECUTABLE_NAME}")
 
 
 class TerraformReleasesParser(HTMLParser):
@@ -33,28 +27,29 @@ class TerraformReleasesParser(HTMLParser):
 
 
 class TerraformTool(Tool):
-    def __init__(self, config_path: Path):
+    def __init__(self, version: Version, config_path: Path):
         super().__init__(config_path)
-        self.version = None
+        self.version = version
         self.tool_name = "terraform"
         self.download_file_name = f"terraform_{self.version}_{self.platform_name}_{self.arch}.zip"
         self.download_url = f"https://releases.hashicorp.com/terraform/{self.version}/{self.download_file_name}"
         self.tool_executable_name = self.tool_name if self.platform_name != "Windows" else f"{self.tool_name}.exe"
 
-    def find_terraform_tf(self) -> str:
+    @classmethod
+    def find_terraform_tf(cls) -> str:
         """Searches the current directory and any subdirectories for terraform.tf."""
-        for root, dirs, files in os.walk("."):
+        for root, _dirs, files in os.walk("."):
             if "terraform.tf" in files:
                 return os.path.join(root, "terraform.tf")
 
-
-    def get_terraform_version(self, file: str) -> str:
+    @classmethod
+    def get_terraform_version(cls, file: str) -> str:
         with open(file) as file:
             hcl = hcl2.load(file)
             return hcl["terraform"][0]["required_version"]
 
-
-    def get_terraform_releases(self) -> list[Version]:
+    @classmethod
+    def get_terraform_releases(cls) -> list[Version]:
         url = "https://releases.hashicorp.com/terraform/"
         response = request.urlopen(url)
         html = response.read().decode("utf-8")
@@ -62,21 +57,18 @@ class TerraformTool(Tool):
         parser.feed(html)
         return parser.versions
 
-
-
-
-
-    def run(self, commands: list[str]):
-        terraform_file = self.find_terraform_tf()
-        terraform_version = self.get_terraform_version(terraform_file)
+    @classmethod
+    def from_terraform_config(cls, config_path: Path):
+        terraform_file = cls.find_terraform_tf()
+        terraform_version = cls.get_terraform_version(terraform_file)
         if "," in terraform_version:
             raise ValueError(
                 "Greater than, but less than constraints are not supported. See https://developer.hashicorp.com/terraform/tutorials/configuration-language/versions#terraform-version-constraints"
             )
 
-        self.version = terraform_version.strip()
+        version = terraform_version.strip()
 
-        versions = self.get_terraform_releases()
+        versions = cls.get_terraform_releases()
 
         if "~>" in terraform_version:
             version = terraform_version.split("~>")[1].strip()
@@ -92,7 +84,9 @@ class TerraformTool(Tool):
             if max_version.match(terraform_version.replace(" ", "")):
                 print(max_version)
                 version = max_version
+        return TerraformTool(version, config_path)
 
+    def run(self, commands: list[str]):
         self.download()
-        print(TERRAFORM_EXECUTABLE)
-        os.execv(TERRAFORM_EXECUTABLE, ["terraform"] + commands)
+        print(self.executable_path)
+        os.execv(self.executable_path, ["terraform"] + commands)

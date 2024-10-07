@@ -1,15 +1,16 @@
 import os
 import shutil
-import zipfile
-from pathlib import Path
-from platform import system, machine
-from abc import ABCMeta, abstractmethod
-from urllib import request
 import stat
+import zipfile
+from abc import ABCMeta
+from abc import abstractmethod
+from pathlib import Path
+from platform import machine
+from platform import system
+from urllib import request
 
 
 class Tool(metaclass=ABCMeta):
-
     def __init__(self, config_path: Path):
         self.executable_path = ""
         self.platform_name = system().lower()
@@ -21,10 +22,9 @@ class Tool(metaclass=ABCMeta):
         self.tool_executable_name = ""
         self.tool_name = ""
 
-
     def download(self):
-        download_directory = self.config_path/"downloads"
-        tools_directory = self.config_path/"tools"
+        download_directory = self.config_path / "downloads"
+        tools_directory = self.config_path / "tools"
         if os.path.exists(download_directory):
             shutil.rmtree(
                 download_directory,
