@@ -46,7 +46,12 @@ class TerraformTool(Tool):
     def get_terraform_version(cls, file: str) -> str:
         with open(file) as file:
             hcl = hcl2.load(file)
-            return hcl["terraform"][0]["required_version"]
+            required_version = hcl["terraform"][0]["required_version"]
+            if "," in required_version:
+                raise ValueError(
+                    "Greater than, but less than constraints are not supported. See https://developer.hashicorp.com/terraform/tutorials/configuration-language/versions#terraform-version-constraints"
+                )
+            return required_version
 
     @classmethod
     def get_terraform_releases(cls) -> list[Version]:
@@ -61,15 +66,13 @@ class TerraformTool(Tool):
     def from_terraform_config(cls, config_path: Path):
         terraform_file = cls.find_terraform_tf()
         terraform_version = cls.get_terraform_version(terraform_file)
-        if "," in terraform_version:
-            raise ValueError(
-                "Greater than, but less than constraints are not supported. See https://developer.hashicorp.com/terraform/tutorials/configuration-language/versions#terraform-version-constraints"
-            )
-
-        version = terraform_version.strip()
-
         versions = cls.get_terraform_releases()
+        version = cls.get_constrained_version(terraform_version, versions)
+        return TerraformTool(version, config_path)
 
+    @classmethod
+    def get_constrained_version(cls, terraform_version, versions):
+        version = terraform_version.strip()
         if "~>" in terraform_version:
             version = terraform_version.split("~>")[1].strip()
             parsed_version = Version.parse(version)
@@ -84,7 +87,7 @@ class TerraformTool(Tool):
             if max_version.match(terraform_version.replace(" ", "")):
                 print(max_version)
                 version = max_version
-        return TerraformTool(version, config_path)
+        return version
 
     def run(self, commands: list[str]):
         self.download()
