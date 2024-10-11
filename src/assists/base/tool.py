@@ -1,4 +1,3 @@
-import os
 import shutil
 import stat
 import zipfile
@@ -21,28 +20,28 @@ class Tool(metaclass=ABCMeta):
         self.download_url = ""
         self.tool_executable_name = ""
         self.tool_name = ""
+        self.version = ""
 
-    def download(self):
+    def download(self, tools_prefix: Path):
         download_directory = self.config_path / "downloads"
-        tools_directory = self.config_path / "tools"
-        if os.path.exists(download_directory):
+        tools_directory = self.config_path / "tools" / tools_prefix
+        if download_directory.exists():
             shutil.rmtree(
                 download_directory,
             )
 
-        os.makedirs(download_directory, exist_ok=True)
-        os.makedirs(tools_directory, exist_ok=True)
+        download_directory.mkdir(parents=True, exist_ok=True)
+        tools_directory.mkdir(parents=True, exist_ok=True)
 
-        target_file = f"{download_directory}/{self.download_file_name}"
+        target_file = download_directory / self.download_file_name
         request.urlretrieve(self.download_url, target_file)
 
         with zipfile.ZipFile(target_file) as archive:
             archive.extractall(tools_directory)
 
         shutil.rmtree(download_directory)
-        self.executable_path = f"{tools_directory}/{self.tool_executable_name}"
-        executable_stat = os.stat(self.executable_path)
-        os.chmod(self.executable_path, executable_stat.st_mode | stat.S_IEXEC)
+        self.executable_path = tools_directory / self.tool_executable_name
+        self.executable_path.chmod(stat.S_IEXEC)
 
     @abstractmethod
     def run(self, commands: list[str]):
