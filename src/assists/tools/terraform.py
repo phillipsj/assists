@@ -1,12 +1,14 @@
-import os
 from html.parser import HTMLParser
 from pathlib import Path
+from platform import machine
+from platform import system
 from urllib import request
 
 import hcl2
 from semver import Version
 
-from assists.base.tool import Tool
+from assists.tools.tool import Tool
+from assists.tools.tool_config import ToolConfig
 
 
 class TerraformReleasesParser(HTMLParser):
@@ -28,24 +30,35 @@ class TerraformReleasesParser(HTMLParser):
 
 class TerraformTool(Tool):
     def __init__(self, version: Version, config_path: Path):
-        super().__init__(config_path)
-        self.version = version
-        self.tool_name = "terraform"
-        self.download_file_name = f"terraform_{self.version}_{self.platform_name}_{self.arch}.zip"
-        self.download_url = f"https://releases.hashicorp.com/terraform/{self.version}/{self.download_file_name}"
-        self.tool_executable_name = self.tool_name if self.platform_name != "Windows" else f"{self.tool_name}.exe"
+        arch: str = "amd64" if machine().lower() == "x86_64" else machine().lower()
+        platform_name: str = system().lower()
+        download_file_name = f"terraform_{version}_{platform_name}_{arch}.zip"
+        download_url = f"https://releases.hashicorp.com/terraform/{version}/{download_file_name}"
+        tool_name = "terraform"
+        tool_executable_name = tool_name if platform_name != "Windows" else f"{tool_name}.exe"
+
+        config = ToolConfig(
+            config_path=config_path,
+            download_file_name=download_file_name,
+            download_url=download_url,
+            tool_executable_name=tool_executable_name,
+            tool_name=tool_name,
+            version=version,
+        )
+
+        super().__init__(config)
 
     @classmethod
-    def find_terraform_tf(cls) -> str:
+    def find_terraform_tf(cls) -> Path:
         """Searches the current directory and any subdirectories for terraform.tf."""
-        for root, _dirs, files in os.walk("."):
+        for root, _dirs, files in Path.cwd().walk():
             if "terraform.tf" in files:
-                return os.path.join(root, "terraform.tf")
+                return root / "terraform.tf"
 
     @classmethod
-    def get_terraform_version(cls, file: str) -> str:
-        with open(file) as file:
-            hcl = hcl2.load(file)
+    def get_terraform_version(cls, file: Path) -> str:
+        with file.open() as f:
+            hcl = hcl2.load(f)
             required_version = hcl["terraform"][0]["required_version"]
             if "," in required_version:
                 raise ValueError(
@@ -88,8 +101,3 @@ class TerraformTool(Tool):
                 print(max_version)
                 version = max_version
         return version
-
-    def run(self, commands: list[str]):
-        self.download()
-        print(self.executable_path)
-        os.execv(self.executable_path, ["terraform"] + commands)

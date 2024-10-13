@@ -5,9 +5,9 @@ from typing import Optional
 import typer
 from typing_extensions import Annotated
 
-from assists import aws
-from assists import azure
-from assists.iac.terraform import TerraformTool
+from assists.cloud import aws
+from assists.cloud import azure
+from assists.tools import TerraformTool
 
 app = typer.Typer()
 app.add_typer(aws.app, name="aws", help="AWS related tasks.")

@@ -1,4 +1,4 @@
-from assists.azure import get_az_cmd
+from assists.cloud.azure import get_az_cmd
 
 
 def test_get_az_cmd():
