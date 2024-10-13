@@ -1,3 +1,7 @@
+import os
+import shutil
+import stat
+import zipfile
 from html.parser import HTMLParser
 from pathlib import Path
 from platform import machine
@@ -6,9 +10,6 @@ from urllib import request
 
 import hcl2
 from semver import Version
-
-from assists.tools.tool import Tool
-from assists.tools.tool_config import ToolConfig
 
 
 class TerraformReleasesParser(HTMLParser):
@@ -28,25 +29,54 @@ class TerraformReleasesParser(HTMLParser):
                 self.versions.append(version)
 
 
-class TerraformTool(Tool):
+class TerraformTool:
     def __init__(self, version: Version, config_path: Path):
-        arch: str = "amd64" if machine().lower() == "x86_64" else machine().lower()
-        platform_name: str = system().lower()
-        download_file_name = f"terraform_{version}_{platform_name}_{arch}.zip"
-        download_url = f"https://releases.hashicorp.com/terraform/{version}/{download_file_name}"
-        tool_name = "terraform"
-        tool_executable_name = tool_name if platform_name != "Windows" else f"{tool_name}.exe"
+        self.version: Version = version
+        self.config_path: Path = config_path
 
-        config = ToolConfig(
-            config_path=config_path,
-            download_file_name=download_file_name,
-            download_url=download_url,
-            tool_executable_name=tool_executable_name,
-            tool_name=tool_name,
-            version=version,
-        )
+        architecture = machine().lower()
+        self.arch: str = "amd64" if architecture == "x86_64" else architecture
+        self.platform_name: str = system().lower()
+        self.download_file_name: str = f"terraform_{version}_{self.platform_name}_{self.arch}.zip"
+        self.download_url: str = f"https://releases.hashicorp.com/terraform/{self.version}/{self.download_file_name}"
+        self.tool_name: str = "terraform"
+        self.tool_executable_name: str = self.tool_name if self.platform_name != "Windows" else f"{self.tool_name}.exe"
 
-        super().__init__(config)
+    @property
+    def download_path(self) -> Path:
+        return self.config_path / "downloads"
+
+    @property
+    def executable_path(self) -> Path:
+        return self.tool_path / self.tool_executable_name
+
+    @property
+    def tool_path(self) -> Path:
+        return self.config_path / "tools" / self.tool_name / str(self.version)
+
+    def download(self):
+        download_directory = self.download_path
+        tool_directory = self.tool_path
+        if download_directory.exists():
+            shutil.rmtree(download_directory)
+
+        download_directory.mkdir(parents=True, exist_ok=True)
+        tool_directory.mkdir(parents=True, exist_ok=True)
+
+        target_file = download_directory / self.download_file_name
+        request.urlretrieve(self.download_url, target_file)
+
+        with zipfile.ZipFile(target_file) as archive:
+            archive.extractall(tool_directory)
+
+        shutil.rmtree(download_directory)
+        self.executable_path.chmod(stat.S_IEXEC)
+
+    def run(self, commands: list[str]):
+        if not self.executable_path.exists():
+            self.download()
+        print(self.executable_path)
+        os.execv(self.executable_path, ["terraform"] + commands)
 
     @classmethod
     def find_terraform_tf(cls) -> Path:
