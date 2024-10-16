@@ -99,11 +99,11 @@ class TerraformTool:
     @classmethod
     def get_terraform_releases(cls) -> list[Version]:
         url = "https://releases.hashicorp.com/terraform/"
-        response = request.urlopen(url)
-        html = response.read().decode("utf-8")
-        parser = TerraformReleasesParser()
-        parser.feed(html)
-        return parser.versions
+        with request.urlopen(url) as response:
+            html = response.read().decode("utf-8")
+            parser = TerraformReleasesParser()
+            parser.feed(html)
+            return parser.versions
 
     @classmethod
     def from_terraform_config(cls, config_path: Path):
