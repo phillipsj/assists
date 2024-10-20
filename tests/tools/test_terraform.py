@@ -4,6 +4,7 @@ from string import Template
 from unittest.mock import patch
 from urllib import request
 
+import pytest
 from pyfakefs.fake_filesystem import FakeFilesystem
 from semver import Version
 
@@ -31,6 +32,26 @@ def test_get_terraform_version_wrong(fs):
     expected_version = "1.9.2"
     actual_version = TerraformTool.get_terraform_version(tf_path)
     assert actual_version != expected_version
+
+
+def test_get_terraform_version_should_throw_exception(fs):
+    tf_path = create_terraform_tf(fs, ">= 1.2.0, < 2.0.0")
+    with pytest.raises(ValueError, match="Greater than, but less than constraints are not supported"):
+        TerraformTool.get_terraform_version(tf_path)
+
+
+def test_find_terraform_tf(fs):
+    expected = Path("/src/terraform.tf")
+    fs.create_file("/src/terraform.tf")
+    actual = TerraformTool.find_terraform_tf()
+    assert actual == expected
+
+
+def test_find_terraform_tf_nested(fs):
+    expected = Path("/src/iac/terraform/terraform.tf")
+    fs.create_file("/src/iac/terraform/terraform.tf")
+    actual = TerraformTool.find_terraform_tf()
+    assert actual == expected
 
 
 def create_terraform_tf(fs: FakeFilesystem, version) -> Path:
