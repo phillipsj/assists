@@ -42,6 +42,17 @@ class TerraformTool:
         self.tool_name: str = "terraform"
         self.tool_executable_name: str = self.tool_name if self.platform_name != "Windows" else f"{self.tool_name}.exe"
 
+    def __eq__(self, other):
+        if not isinstance(other, TerraformTool):
+            return False
+
+        return (
+            self.version == other.version
+            and self.config_path == other.config_path
+            and self.download_url == other.download_url
+            and self.tool_executable_name == other.tool_executable_name
+        )
+
     @property
     def download_path(self) -> Path:
         return self.config_path / "downloads"
@@ -84,6 +95,10 @@ class TerraformTool:
         for root, _dirs, files in Path.cwd().walk():
             if "terraform.tf" in files:
                 return root / "terraform.tf"
+            else:
+                raise FileNotFoundError(
+                    "Required file terraform.tf not found in current directory or any subdirectories."
+                )
 
     @classmethod
     def get_terraform_version(cls, file: Path) -> str:
