@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 from typer.testing import CliRunner
 
-from assists.azure import USER_PLACEHOLDER
+from assists.cloud.azure import USER_PLACEHOLDER
 from assists.main import app
 
 runner = CliRunner()
