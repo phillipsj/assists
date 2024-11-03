@@ -16,6 +16,7 @@ $ ast [OPTIONS] COMMAND [ARGS]...
 
 * `aws`: AWS related tasks.
 * `az`: Azure related tasks.
+* `terraform`: Detects, installs, and executes Terraform.
 
 ## `ast aws`
 
@@ -124,6 +125,20 @@ $ ast az podman [OPTIONS] REGISTRY
 **Arguments**:
 
 * `REGISTRY`: The registry to login to.  [required]
+
+**Options**:
+
+* `--help`: Show this message and exit.
+
+## `ast terraform`
+
+Detects, installs, and executes Terraform.
+
+**Usage**:
+
+```console
+$ ast terraform [OPTIONS]
+```
 
 **Options**:
 

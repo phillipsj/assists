@@ -1,5 +1,5 @@
-from assists.aws import get_aws_cmd
-from assists.aws import get_region
+from assists.cloud.aws import get_aws_cmd
+from assists.cloud.aws import get_region
 
 
 def test_get_aws_cmd():
